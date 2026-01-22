@@ -1,3 +1,8 @@
+# =====================================
+# TRAIN & SAVE SVM MODELS (PATH SAFE)
+# =====================================
+
+import os
 import pandas as pd
 import numpy as np
 import joblib
@@ -7,8 +12,19 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
+# -------------------------------------
+# Resolve BASE directory safely
+# -------------------------------------
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(BASE_DIR, "data", "train.csv")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+
+os.makedirs(MODELS_DIR, exist_ok=True)
+
+# -------------------------------------
 # Load dataset
-df = pd.read_csv("../data/train.csv")
+# -------------------------------------
+df = pd.read_csv(DATA_PATH)
 
 # Encode target
 df["Loan_Status"] = df["Loan_Status"].map({"Y": 1, "N": 0})
@@ -40,6 +56,7 @@ categorical_features = [
 X = df[numeric_features + categorical_features]
 y = df["Loan_Status"]
 
+# Preprocessor
 preprocessor = ColumnTransformer(
     transformers=[
         ("num", StandardScaler(), numeric_features),
@@ -47,18 +64,22 @@ preprocessor = ColumnTransformer(
     ]
 )
 
+# Models
 models = {
     "linear": SVC(kernel="linear", probability=True),
     "poly": SVC(kernel="poly", degree=3, probability=True),
     "rbf": SVC(kernel="rbf", probability=True)
 }
 
+# Train & save
 for name, svm in models.items():
     pipeline = Pipeline([
         ("preprocess", preprocessor),
         ("model", svm)
     ])
     pipeline.fit(X, y)
-    joblib.dump(pipeline, f"../models/svm_{name}.pkl")
 
-print("Models trained and saved successfully.")
+    model_path = os.path.join(MODELS_DIR, f"svm_{name}.pkl")
+    joblib.dump(pipeline, model_path)
+
+print("✅ Models trained and saved successfully.")

@@ -1,20 +1,32 @@
-import streamlit as st
+# =====================================
+# SMART LOAN APPROVAL SYSTEM
+# =====================================
+
+import os
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
+import streamlit as st
+
+# -------------------------------------
+# Resolve BASE directory safely
+# -------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, "models")
 
 # Load models
 models = {
-    "Linear SVM": joblib.load("models/svm_linear.pkl"),
-    "Polynomial SVM": joblib.load("models/svm_poly.pkl"),
-    "RBF SVM": joblib.load("models/svm_rbf.pkl")
+    "Linear SVM": joblib.load(os.path.join(MODELS_DIR, "svm_linear.pkl")),
+    "Polynomial SVM": joblib.load(os.path.join(MODELS_DIR, "svm_poly.pkl")),
+    "RBF SVM": joblib.load(os.path.join(MODELS_DIR, "svm_rbf.pkl"))
 }
 
-# Title & description
+# -------------------------------------
+# App UI
+# -------------------------------------
 st.title("💳 Smart Loan Approval System")
 st.write("This system uses **Support Vector Machines (SVM)** to predict loan approval.")
 
-# Sidebar inputs
 st.sidebar.header("Applicant Details")
 
 income = st.sidebar.number_input("Applicant Income", min_value=0, value=5000)
@@ -23,19 +35,15 @@ credit_history = st.sidebar.radio("Credit History", ["Yes", "No"])
 employment = st.sidebar.selectbox("Employment Status", ["Yes", "No"])
 property_area = st.sidebar.selectbox("Property Area", ["Urban", "Semiurban", "Rural"])
 
-credit_history = 1 if credit_history == "Yes" else 0
+credit_history_val = 1 if credit_history == "Yes" else 0
 
 # Feature engineering
-income_log = np.log1p(income)
-loan_log = np.log1p(loan_amount)
-total_income_log = np.log1p(income)
-
 input_df = pd.DataFrame({
-    "ApplicantIncome_log": [income_log],
-    "LoanAmount_log": [loan_log],
-    "TotalIncome_log": [total_income_log],
+    "ApplicantIncome_log": [np.log1p(income)],
+    "LoanAmount_log": [np.log1p(loan_amount)],
+    "TotalIncome_log": [np.log1p(income)],
     "Loan_Amount_Term": [360],
-    "Credit_History": [credit_history],
+    "Credit_History": [credit_history_val],
     "Self_Employed": [employment],
     "Property_Area": [property_area]
 })
@@ -61,7 +69,7 @@ if st.button("🔍 Check Loan Eligibility"):
     st.write(f"**Kernel Used:** {model_choice}")
     st.write(f"**Confidence Score:** {confidence:.2f}")
 
-    if credit_history == 1:
-        st.info("Applicant has good credit history and income stability.")
+    if credit_history_val == 1:
+        st.info("Applicant shows good credit history and income stability.")
     else:
         st.warning("Poor credit history increases repayment risk.")
